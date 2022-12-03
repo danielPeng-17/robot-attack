@@ -42,9 +42,12 @@ GLdouble fov = 60.0;
 int lastMouseX;
 int lastMouseY;
 
+
 GLdouble eyeX = 0.0, eyeY = 3.0, eyeZ = 30.0;
 GLdouble radius = eyeZ;
 GLdouble zNear = 0.1, zFar = 40.0;
+
+GLdouble cameraFrontX = 0.0, cameraFrontY = 0.0, cameraFrontZ = 0.0;
 
 const double degree = 3.1415 / 180;
 
@@ -92,8 +95,8 @@ bool vboInitialized;
 
 bool firstMouse = true;
 
-double pitch = 0;
-double yaw = 0;
+double pitch = 10;
+double yaw = -90;
 
 double positionX = 0.0;
 double positionY = 0.0;
@@ -131,8 +134,8 @@ int main(int argc, char* argv[])
 	glutKeyboardFunc(keyboardHandler3D);
 	//glutSetCursor(GLUT_CURSOR_NONE);
 	//glutMouseWheelFunc(mouseScrollWheelHandler3D);
-	glutMotionFunc(mouseMotionHandler3D);
-	//glutSpecialFunc(specialKeyHandler);
+	//glutMotionFunc(mouseMotionHandler3D);
+	glutSpecialFunc(specialKeyHandler);
 	// Initialize the 3D system
 	init3DSurfaceWindow();
 
@@ -175,7 +178,7 @@ void init3DSurfaceWindow()
 	gluPerspective(fov, aspect, zNear, zFar);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(eyeX, eyeY, eyeZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	gluLookAt(eyeX, eyeY, eyeZ, cameraFrontX * 8.0, cameraFrontY * 8.0, cameraFrontY * 8.0, 0.0, 1.0, 0.0);
 }
 
 
@@ -189,7 +192,7 @@ void reshape3D(int w, int h)
 	gluPerspective(fov, aspect, zNear, zFar);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(eyeX, eyeY, eyeZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	gluLookAt(eyeX, eyeY, eyeZ, cameraFrontX * 8.0, cameraFrontY * 8.0, cameraFrontY * 8.0, 0.0, 1.0, 0.0);
 }
 
 void display3D()
@@ -201,16 +204,10 @@ void display3D()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 	// Set up the Viewing Transformation (V matrix)	
-	gluLookAt(eyeX, eyeY, eyeZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	gluLookAt(eyeX, eyeY, eyeZ, cameraFrontX * 8.0, cameraFrontY * 8.0, cameraFrontY * 8.0, 0.0, 1.0, 0.0);
 	drawGround();
 	initVBO();
-
-	glPushMatrix();
-	glRotatef(pitch, 0, 1, 0);
-	glRotatef(-yaw + 45, 1, 0, 0);
-	drawQuads();
-	glPopMatrix();
-
+	drawCannon();
 	glPushMatrix();
 	for (int i = 0; i < bots.size(); i++) {
 		bots[i].drawRobot();
@@ -220,6 +217,28 @@ void display3D()
 
 	// Draw quad mesh
 	glutSwapBuffers();
+}
+
+
+void drawCannon() {
+	glPushMatrix();
+	glutSolidCube(4.0);
+	glPopMatrix();
+	glPushMatrix();
+		glTranslatef(0, 0, radius * 0.8);
+		glRotatef(-90, 0, 1, 0);
+		glRotatef(-yaw, 0, 1, 0);
+		glRotatef(pitch, 1, 0, 0);
+		glPushMatrix();
+
+		glPushMatrix();
+		glRotatef(-90, 1, 0, 0);
+		glScalef(1, 1, 1);
+		drawCannonFromVBO();
+		glPopMatrix();
+
+		glPopMatrix();
+	glPopMatrix();
 }
 
 void drawBots()
@@ -296,7 +315,7 @@ void initVBO()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void drawQuads()
+void drawCannonFromVBO()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, vboId);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboId);
@@ -316,50 +335,50 @@ void drawQuads()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void mouseMotionHandler3D(int x, int y)
-{
-	if (firstMouse) {
-		lastMouseX = x;
-		lastMouseY = y;
-		firstMouse = false;
-	}
-
-	double hypoteneuse = sqrt(pow(radius, 2) + pow(eyeY, 2));
-	int dx = x - lastMouseX;
-	int dy = y - lastMouseY;
-
-	lastMouseX = x;
-	lastMouseY = y;
-
-	//if (x < 50 || x > window3DSizeX - 50) {
-	//	lastMouseX = window3DSizeX / 2;
-	//	lastMouseY = window3DSizeY / 2;
-	//	glutWarpPointer(window3DSizeX / 2, window3DSizeY / 2);
-	//}
-	//else if (y < 50 || y > window3DSizeY - 50) {
-	//	lastMouseX = window3DSizeX / 2;
-	//	lastMouseY = window3DSizeY / 2;
-	//	glutWarpPointer(window3DSizeX / 2, window3DSizeY / 2);
-	//}
-
-	float sensitivity = 0.1f;
-	dx *= sensitivity;
-	dy *= sensitivity;
-
-	yaw += dx;
-	pitch += dy;
-
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f)
-		pitch = -89.0f;
-
-	eyeX = cos(RADIANS * yaw) * cos(RADIANS * pitch) * hypoteneuse;
-	eyeY = sin(RADIANS * pitch) * hypoteneuse;
-	eyeZ = sin(RADIANS * yaw) * cos(RADIANS * pitch) * hypoteneuse;
-
-	glutPostRedisplay();
-}
+//void mouseMotionHandler3D(int x, int y)
+//{
+//	if (firstMouse) {
+//		lastMouseX = x;
+//		lastMouseY = y;
+//		firstMouse = false;
+//	}
+//
+//	double hypoteneuse = sqrt(pow(radius, 2) + pow(eyeY, 2));
+//	int dx = x - lastMouseX;
+//	int dy = y - lastMouseY;
+//
+//	lastMouseX = x;
+//	lastMouseY = y;
+//
+//	//if (x < 50 || x > window3DSizeX - 50) {
+//	//	lastMouseX = window3DSizeX / 2;
+//	//	lastMouseY = window3DSizeY / 2;
+//	//	glutWarpPointer(window3DSizeX / 2, window3DSizeY / 2);
+//	//}
+//	//else if (y < 50 || y > window3DSizeY - 50) {
+//	//	lastMouseX = window3DSizeX / 2;
+//	//	lastMouseY = window3DSizeY / 2;
+//	//	glutWarpPointer(window3DSizeX / 2, window3DSizeY / 2);
+//	//}
+//
+//	float sensitivity = 0.1f;
+//	dx *= sensitivity;
+//	dy *= sensitivity;
+//
+//	yaw += dx;
+//	pitch += dy;
+//
+//	if (pitch > 89.0f)
+//		pitch = 89.0f;
+//	if (pitch < -89.0f)
+//		pitch = -89.0f;
+//
+//	eyeX = cos(RADIANS * yaw) * cos(RADIANS * pitch) * hypoteneuse;
+//	eyeY = sin(RADIANS * pitch) * hypoteneuse;
+//	eyeZ = sin(RADIANS * yaw) * cos(RADIANS * pitch) * hypoteneuse;
+//
+//	glutPostRedisplay();
+//}
 
 void mouseScrollWheelHandler3D(int button, int dir, int xMouse, int yMouse)
 {
@@ -412,37 +431,41 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 
 void specialKeyHandler(int key, int x, int y)
 {
-	//double hypoteneuse = sqrt(pow(radius, 2) + pow(eyeY, 2));
+	double length = sqrt(pow(radius, 2) + pow(eyeY, 2));
 
 	switch (key)
 	{
 	case GLUT_KEY_LEFT:
-		yaw -= 5.0;
+		yaw -= 10.0;
 		break;
 	case GLUT_KEY_RIGHT:
-		yaw += 5.0;
+		yaw += 10.0;
 		break;
 	case GLUT_KEY_UP:
-		pitch -= 2.0;
+		pitch += 5.0;
 		break;
 	case GLUT_KEY_DOWN:
-		pitch += 2.0;
+		pitch -= 5.0;
 		break;
 	}
 
-	if (yaw > 60.0)
-		yaw = 60.0;
-	if (yaw < 0.0)
+	printf("%f", yaw);
+	printf("   ");
+
+	if (yaw > 0)
 		yaw = 0;
+	if (yaw < -180)
+		yaw = -180;
 
-	if (pitch > 20.0)
-		pitch = 20.0;
-	if (pitch < 0)
-		pitch = 0;
+	if (pitch > 90.0)
+		pitch = 90.0;
+	if (pitch < 10)
+		pitch = 10;
 
-	eyeX = cos(RADIANS * yaw) * cos(RADIANS * pitch) * radius;
-	eyeY = sin(RADIANS * pitch) * radius;
-	eyeZ = sin(RADIANS * yaw) * cos(RADIANS * pitch) * radius;
+	cameraFrontX = (cos(RADIANS * yaw) * cos(RADIANS * pitch));
+	cameraFrontY = (sin(RADIANS * pitch));
+	cameraFrontZ = (sin(RADIANS * yaw) * cos(RADIANS * pitch));
+
 	glutPostRedisplay();
 }
 
