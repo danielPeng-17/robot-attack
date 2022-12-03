@@ -9,8 +9,49 @@
 #include <sstream>  
 #include <vector>
 #include "robotAttack.h"
+#include "robot.h"
 
 using namespace std;
+
+ // Ground Mesh material
+GLfloat groundMat_ambient[] = { 0.4, 0.4, 0.4, 1.0 };
+GLfloat groundMat_specular[] = { 0.01, 0.01, 0.01, 1.0 };
+GLfloat groundMat_diffuse[] = { 0.4, 0.4, 0.7, 1.0 };
+GLfloat groundMat_shininess[] = { 1.0 };
+
+GLfloat light_position0[] = { 4.0, 8.0, 8.0, 1.0 };
+GLfloat light_diffuse0[] = { 1.0, 1.0, 1.0, 1.0 };
+
+GLfloat light_position1[] = { -4.0, 8.0, 8.0, 1.0 };
+GLfloat light_diffuse1[] = { 1.0, 1.0, 1.0, 1.0 };
+
+GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat model_ambient[] = { 0.5, 0.5, 0.5, 1.0 };
+
+//
+// Surface of Revolution consists of vertices and quads
+//
+// Set up lighting/shading and material properties for surface of revolution
+GLfloat quadMat_ambient[] = { 0.0, 0.0, 0.0, 1.0 };
+GLfloat quadMat_specular[] = { 0.45, 0.55, 0.45, 1.0 };
+GLfloat quadMat_diffuse[] = { 0.1, 0.35, 0.1, 1.0 };
+GLfloat quadMat_shininess[] = { 10.0 };
+
+GLdouble fov = 60.0;
+
+int lastMouseX;
+int lastMouseY;
+
+GLdouble eyeX = 0.0, eyeY = 3.0, eyeZ = 30.0;
+GLdouble radius = eyeZ;
+GLdouble zNear = 0.1, zFar = 40.0;
+
+const double degree = 3.1415 / 180;
+
+bool allocateVBO = true;
+unsigned int nId;
+unsigned int vId;
+unsigned int qId;
 
 GLdouble worldLeft = -12;
 GLdouble worldRight = 12;
@@ -65,6 +106,16 @@ GLdouble aspect = (GLdouble)window3DSizeX / window3DSizeY;
 
 int currentButton;
 
+Robot r1 = Robot();
+
+vector<Robot> bots;
+
+int delay = 30;
+
+bool gameStart = false;
+
+bool isAllBotsDead;
+
 int main(int argc, char* argv[])
 {
 	glutInit(&argc, (char**)argv);
@@ -80,8 +131,8 @@ int main(int argc, char* argv[])
 	glutKeyboardFunc(keyboardHandler3D);
 	//glutSetCursor(GLUT_CURSOR_NONE);
 	//glutMouseWheelFunc(mouseScrollWheelHandler3D);
-	//glutMotionFunc(mouseMotionHandler3D);
-	glutSpecialFunc(specialKeyHandler);
+	glutMotionFunc(mouseMotionHandler3D);
+	//glutSpecialFunc(specialKeyHandler);
 	// Initialize the 3D system
 	init3DSurfaceWindow();
 
@@ -93,54 +144,6 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-
-/************************************************************************************
- *
- *
- * 3D Window and Surface of Revolution Code
- *
- * Fill in the code in the empty functions
- ************************************************************************************/
- // Ground Mesh material
-GLfloat groundMat_ambient[] = { 0.4, 0.4, 0.4, 1.0 };
-GLfloat groundMat_specular[] = { 0.01, 0.01, 0.01, 1.0 };
-GLfloat groundMat_diffuse[] = { 0.4, 0.4, 0.7, 1.0 };
-GLfloat groundMat_shininess[] = { 1.0 };
-
-GLfloat light_position0[] = { 4.0, 8.0, 8.0, 1.0 };
-GLfloat light_diffuse0[] = { 1.0, 1.0, 1.0, 1.0 };
-
-GLfloat light_position1[] = { -4.0, 8.0, 8.0, 1.0 };
-GLfloat light_diffuse1[] = { 1.0, 1.0, 1.0, 1.0 };
-
-GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-GLfloat model_ambient[] = { 0.5, 0.5, 0.5, 1.0 };
-
-//
-// Surface of Revolution consists of vertices and quads
-//
-// Set up lighting/shading and material properties for surface of revolution
-GLfloat quadMat_ambient[] = { 0.0, 0.0, 0.0, 1.0 };
-GLfloat quadMat_specular[] = { 0.45, 0.55, 0.45, 1.0 };
-GLfloat quadMat_diffuse[] = { 0.1, 0.35, 0.1, 1.0 };
-GLfloat quadMat_shininess[] = { 10.0 };
-
-GLdouble fov = 60.0;
-
-int lastMouseX;
-int lastMouseY;
-
-GLdouble eyeX = 0.0, eyeY = 3.0, eyeZ = 30.0;
-GLdouble radius = eyeZ;
-GLdouble zNear = 0.1, zFar = 40.0;
-
-const double degree = 3.1415 / 180;
-
-bool allocateVBO = true;
-unsigned int nId;
-unsigned int vId;
-unsigned int qId;
-
 
 void init3DSurfaceWindow()
 {
@@ -204,12 +207,24 @@ void display3D()
 
 	glPushMatrix();
 	glRotatef(pitch, 0, 1, 0);
-	glRotatef(-yaw, 1, 0, 0);
+	glRotatef(-yaw + 45, 1, 0, 0);
 	drawQuads();
 	glPopMatrix();
 
+	glPushMatrix();
+	for (int i = 0; i < bots.size(); i++) {
+		bots[i].drawRobot();
+	}
+	glPopMatrix();
+	
+
 	// Draw quad mesh
 	glutSwapBuffers();
+}
+
+void drawBots()
+{
+
 }
 
 void drawGround()
@@ -314,7 +329,7 @@ void mouseMotionHandler3D(int x, int y)
 	int dy = y - lastMouseY;
 
 	lastMouseX = x;
-	lastMouseY = y;	
+	lastMouseY = y;
 
 	//if (x < 50 || x > window3DSizeX - 50) {
 	//	lastMouseX = window3DSizeX / 2;
@@ -368,6 +383,27 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 		// Esc, q, or Q key = Quit 
 		exit(0);
 		break;
+	case 'A':
+	case 'a':
+		if (gameStart == false) {
+			gameStart = true;
+			for (int i = 0; i < 5; i++) {
+				bots[i].isWalking = true;
+			}
+			glutTimerFunc(delay, animationHandler, 0);
+		}
+		break;
+	case 'R':
+	case 'r':
+		if (bots.empty()) {
+			for (int i = 0; i < 5; i++) {
+				Robot r = Robot();
+				r.scaleFactor = 0.3;
+				r.startX = -15 + (7.5 * i);
+				bots.push_back(r);
+			}
+		}
+		break;
 	default:
 		break;
 	}
@@ -408,4 +444,69 @@ void specialKeyHandler(int key, int x, int y)
 	eyeY = sin(RADIANS * pitch) * radius;
 	eyeZ = sin(RADIANS * yaw) * cos(RADIANS * pitch) * radius;
 	glutPostRedisplay();
+}
+
+void animationHandler(int param) {
+
+	for (int i = 0; i < bots.size() && bots.size() > 0; i++)
+	{
+		if (bots[i].life > 0)
+		{
+			if (bots[i].walkZ < eyeZ + 5) {
+				bots[i].walkZ += 0.1;
+			}
+			else {
+				bots[i].life = 0;
+				gameStart = false;
+				bots.clear();
+				break;
+			}
+			
+
+			// walking animation
+			if (bots[i].legMoveBack) {
+				if (bots[i].upperLegAngle < bots[i].MAX_UPPER_LEG_ANGLE) {
+					bots[i].upperLegAngle += 2.0;
+				}
+				else {
+					if (bots[i].lowerLegAngle > bots[i].MIN_LOWER_LEG_ANGLE) {
+						bots[i].lowerLegAngle -= 2.0;
+					}
+					else {
+						bots[i].legMoveBack = false;
+						bots[i].legMoveForward = true;
+					}
+				}
+			}
+			else if (bots[i].legMoveForward) {
+				if (bots[i].upperLegAngle > bots[i].MIN_UPPER_LEG_ANGLE) {
+					bots[i].upperLegAngle -= 2.0;
+				}
+				else {
+					if (bots[i].lowerLegAngle < bots[i].MAX_LOWER_LEG_ANGLE) {
+						bots[i].lowerLegAngle += 2.0;
+					}
+					else {
+						bots[i].legMoveForward = false;
+						bots[i].legMoveBack = true;
+						bots[i].movingLeftLeg = !bots[i].movingLeftLeg;
+					}
+				}
+			}
+		}
+		else if (bots[i].life == 0 && bots[i].scaleFactor > 0) {
+			if (bots[i].legMoveForward != false || bots[i].legMoveBack != false) {
+				bots[i].legMoveForward = false;
+				bots[i].legMoveBack = false;
+			}
+
+			bots[i].deathRotation += 0.1;
+			bots[i].scaleFactor -= 0.1;
+		}
+	}
+	if (gameStart == true) {
+		//glutSetWindow(window3D);
+		glutPostRedisplay();
+		glutTimerFunc(delay, animationHandler, 0);
+	}
 }

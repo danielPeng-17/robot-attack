@@ -8,4 +8,5 @@ void drawQuads();
 void mouseScrollWheelHandler3D(int button, int dir, int xMouse, int yMouse);
 void mouseMotionHandler3D(int x, int y);
 void keyboardHandler3D(unsigned char key, int x, int y);
-void specialKeyHandler(int key, int x, int y);
+//void specialKeyHandler(int key, int x, int y);
+void animationHandler(int param);
