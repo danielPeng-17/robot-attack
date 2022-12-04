@@ -46,7 +46,7 @@ int lastMouseX;
 int lastMouseY;
 
 
-GLdouble eyeX = 0.0, eyeY = 3.0, eyeZ = 30.0;
+GLdouble eyeX = 0.0, eyeY = 5.0, eyeZ = 30.0;
 GLdouble radius = eyeZ;
 GLdouble zNear = 0.1, zFar = 100.0;
 
@@ -242,11 +242,15 @@ void display3D()
 
 
 void drawCannon() {
-	//glPushMatrix();
-	//glutSolidCube(4.0);
-	//glPopMatrix();
+	
 	glPushMatrix();
-		glTranslatef(gunOffset, 0, radius * 0.8);
+		if (!isCannonActive) {
+			glMaterialfv(GL_FRONT, GL_AMBIENT, robotArm_mat_ambient);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, robotArm_mat_specular);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, robotArm_mat_diffuse);
+			glMaterialfv(GL_FRONT, GL_SHININESS, robotArm_mat_shininess);
+		}
+		glTranslatef(gunOffset, 2, radius * 0.8);
 		glRotatef(-90, 0, 1, 0);
 		glRotatef(-yaw, 0, 1, 0);
 		glRotatef(pitch, 1, 0, 0);
@@ -264,7 +268,7 @@ void drawCannon() {
 
 void drawBullet() {
 	glPushMatrix();
-		glTranslatef(gunOffset, 0, radius * 0.8);
+		glTranslatef(gunOffset, 2, radius * 0.8);
 		glRotatef(-90, 0, 1, 0);
 		glRotatef(-latestBulletYaw, 0, 1, 0);
 		glRotatef(latestBulletPitch, 1, 0, 0);
@@ -275,11 +279,6 @@ void drawBullet() {
 		glPopMatrix();
 	}
 	glPopMatrix();
-}
-
-void drawBots()
-{
-
 }
 
 void drawGround()
@@ -393,20 +392,11 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 		// Esc, q, or Q key = Quit 
 		exit(0);
 		break;
-	case 'A':
-	case 'a':
-		if (gameStart == false) {
-			gameStart = true;
-			for (int i = 0; i < bots.size(); i++) {
-				bots[i].isWalking = true;
-				bots[i].calcBulletPatch();
-			}
-			glutTimerFunc(delay, animationHandler, 0);
-			glutTimerFunc(delay, animationHandlerShooting, 0);
-		}
-		break;
 	case 'R':
 	case 'r':
+		if (bots.size() > 0) {
+			bots.clear();
+		}
 		if (bots.empty()) {
 			for (int i = 0; i < 4; i++) {
 				Robot r = Robot();
@@ -422,9 +412,20 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 				bots.push_back(r);
 			}
 		}
+		if (!gameStart || !isCannonActive) {
+			gameStart = true;
+			isCannonActive = true;
+			for (int i = 0; i < bots.size(); i++) {
+				bots[i].isWalking = true;
+				bots[i].calcBulletPatch();
+			}
+			glutTimerFunc(delay, collisionDetection, 0);
+			glutTimerFunc(delay, animationHandler, 0);
+			glutTimerFunc(delay, animationHandlerShooting, 0);
+		}
 		break;
 	case ' ':
-		if (isBulletActive == false && gameStart) {  //  && isCannonActive && gameStart == true
+		if (isBulletActive == false && isCannonActive && gameStart == true) {
 			isBulletActive = true;
 			setLatestYawAndPitch();
 			glutTimerFunc(delay, animationHandlerBullets, 0);
@@ -439,6 +440,8 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 void specialKeyHandler(int key, int x, int y)
 {
 	double length = sqrt(pow(radius, 2) + pow(eyeY, 2));
+
+	if (!isCannonActive) return;
 
 	switch (key)
 	{
@@ -471,6 +474,30 @@ void specialKeyHandler(int key, int x, int y)
 	cameraFrontZ = (sin(RADIANS * yaw) * cos(RADIANS * pitch));
 
 	glutPostRedisplay();
+}
+
+void collisionDetection(int param) {
+	for (int i = 0; i < bots.size(); i++) {
+		float botBulletsCollisionDistance = sqrt(pow(gunOffset - bots[i].bulletX, 2) + pow(2 - bots[i].bulletY, 2) + pow((radius * 0.8) - bots[i].bulletZ, 2));
+		if (botBulletsCollisionDistance < 1.8) {
+			isCannonActive = false;
+		}
+
+		float cannonBulletCollisionDistance = sqrt(pow(bots[i].startX - latestBulletYaw - 90 - gunOffset, 2) + pow(-latestBulletPitch, 2) + pow(bots[i].walkZ - radius * 0.8 - currentBulletTravel, 2));
+		if (i == 3) {
+			printf("cannonBulletCollisionDistance for bot %d is %f\n", i, cannonBulletCollisionDistance);
+		}
+		if (cannonBulletCollisionDistance < 5) {
+			bots[i].life -= 1;
+			bots[i].isShooting = false;
+			currentBulletTravel = 0.0f;
+			currentBulletActiveTime = 0.0f;
+			isBulletActive = false;
+			setLatestYawAndPitch();
+		}
+	}
+	glutPostRedisplay();
+	glutTimerFunc(delay, collisionDetection, 0);
 }
 
 void animationHandler(int param) {

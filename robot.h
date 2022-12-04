@@ -73,9 +73,9 @@ public:
 
 	float scaleFactor = 1.0;
 	float startX = 0.0;
-	float walkZ = -40.0;
+	float walkZ = -30.0;
 
-	int life = 2;
+	int life = 1;
 	bool isWalking = false;
 	bool legMoveBack = true;
 	bool legMoveForward = false;
@@ -106,10 +106,11 @@ public:
 		}
 
 		glPushMatrix();
+		if (life == 0) {
+			glRotatef(deathRotation, 1.0, 0.0, 0.0);
+		}
 		glTranslatef(startX, 2, walkZ);
-		// spin robot on base. 
 		glRotatef(robotAngle, 0.0, 1.0, 0.0);
-		glRotatef(deathRotation, 1.0, 0.0, 0.0);
 		glScalef(scaleFactor, scaleFactor, scaleFactor);
 
 		drawBody();
@@ -262,7 +263,6 @@ public:
 		}
 		else {
 			bulletX += sin(M_PI * 2 * (bulletAngle / 360.0)) * speed;
-			bulletY -= sin(M_PI * 2 * (bulletAngleY / 360.0)) * 0.1;
 			bulletZ += cos(M_PI * 2 * (bulletAngle / 360.0)) * speed;
 		}
 	}
@@ -275,7 +275,6 @@ public:
 		float z = cameraZ + walkZ;
 		srand((unsigned int)time(NULL));
 		bulletAngle = (atan(x / z) * (180 / M_PI)) + ((rand() % 100) / (float)100);
-		bulletAngleY = atan(y / z) * (180 / M_PI);
 	}
 };
 

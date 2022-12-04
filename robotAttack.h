@@ -15,3 +15,4 @@ void animationHandlerBullets(int param);
 void drawBullet();
 void setLatestYawAndPitch();
 void animationHandlerShooting(int param);
+void collisionDetection(int param);
