@@ -11,3 +11,6 @@ void keyboardHandler3D(unsigned char key, int x, int y);
 void specialKeyHandler(int key, int x, int y);
 void animationHandler(int param);
 void drawCannon();
+void animationHandlerBullets(int param);
+void drawBullet();
+void setLatestYawAndPitch();

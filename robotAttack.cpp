@@ -95,14 +95,26 @@ bool vboInitialized;
 
 bool firstMouse = true;
 
-double pitch = 10;
-double yaw = -90;
-
-double positionX = 0.0;
-double positionY = 0.0;
+float pitch = 5.0f;
+float yaw = -90.0f;
 
 const double PI = 3.14159265;
 const double RADIANS = PI / 180;
+
+// cannon
+
+bool isBulletActive = false;
+bool isBulletFired = false;
+bool isCannonActive = true;
+
+float latestBulletYaw = yaw;
+float latestBulletPitch = pitch;
+
+float bulletSpeed = 0.5f;
+float maxBulletActiveTime = 60.0f;
+
+float currentBulletActiveTime = 0.0f;
+float currentBulletTravel = 0.0f;
 
 int window3DSizeX = 800, window3DSizeY = 600;
 GLdouble aspect = (GLdouble)window3DSizeX / window3DSizeY;
@@ -119,6 +131,10 @@ bool gameStart = false;
 
 bool isAllBotsDead;
 
+// size
+
+float bulletSize = 1.0f;
+
 int main(int argc, char* argv[])
 {
 	glutInit(&argc, (char**)argv);
@@ -132,9 +148,6 @@ int main(int argc, char* argv[])
 	glutDisplayFunc(display3D);
 	glutReshapeFunc(reshape3D);
 	glutKeyboardFunc(keyboardHandler3D);
-	//glutSetCursor(GLUT_CURSOR_NONE);
-	//glutMouseWheelFunc(mouseScrollWheelHandler3D);
-	//glutMotionFunc(mouseMotionHandler3D);
 	glutSpecialFunc(specialKeyHandler);
 	// Initialize the 3D system
 	init3DSurfaceWindow();
@@ -178,7 +191,7 @@ void init3DSurfaceWindow()
 	gluPerspective(fov, aspect, zNear, zFar);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(eyeX, eyeY, eyeZ, cameraFrontX * 8.0, cameraFrontY * 8.0, cameraFrontY * 8.0, 0.0, 1.0, 0.0);
+	gluLookAt(eyeX, eyeY, eyeZ, cameraFrontX * 8.0, cameraFrontY * 8.0, cameraFrontZ * 8.0, 0.0, 1.0, 0.0);
 }
 
 
@@ -192,7 +205,7 @@ void reshape3D(int w, int h)
 	gluPerspective(fov, aspect, zNear, zFar);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(eyeX, eyeY, eyeZ, cameraFrontX * 8.0, cameraFrontY * 8.0, cameraFrontY * 8.0, 0.0, 1.0, 0.0);
+	gluLookAt(eyeX, eyeY, eyeZ, cameraFrontX * 8.0, cameraFrontY * 8.0, cameraFrontZ * 8.0, 0.0, 1.0, 0.0);
 }
 
 void display3D()
@@ -204,10 +217,13 @@ void display3D()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 	// Set up the Viewing Transformation (V matrix)	
-	gluLookAt(eyeX, eyeY, eyeZ, cameraFrontX * 8.0, cameraFrontY * 8.0, cameraFrontY * 8.0, 0.0, 1.0, 0.0);
+	gluLookAt(eyeX, eyeY, eyeZ, cameraFrontX * 8.0, cameraFrontY * 8.0, cameraFrontZ * 8.0, 0.0, 1.0, 0.0);
 	drawGround();
 	initVBO();
 	drawCannon();
+	if (isBulletActive == true) {
+		drawBullet();
+	}
 	glPushMatrix();
 	for (int i = 0; i < bots.size(); i++) {
 		bots[i].drawRobot();
@@ -221,9 +237,9 @@ void display3D()
 
 
 void drawCannon() {
-	glPushMatrix();
-	glutSolidCube(4.0);
-	glPopMatrix();
+	//glPushMatrix();
+	//glutSolidCube(4.0);
+	//glPopMatrix();
 	glPushMatrix();
 		glTranslatef(0, 0, radius * 0.8);
 		glRotatef(-90, 0, 1, 0);
@@ -238,6 +254,21 @@ void drawCannon() {
 		glPopMatrix();
 
 		glPopMatrix();
+	glPopMatrix();
+}
+
+void drawBullet() {
+	glPushMatrix();
+		glTranslatef(0, 0, radius * 0.8);
+		glRotatef(-90, 0, 1, 0);
+		glRotatef(-latestBulletYaw, 0, 1, 0);
+		glRotatef(latestBulletPitch, 1, 0, 0);
+	if (isCannonActive == true) {
+		glPushMatrix();
+		glTranslatef(0, 0, -currentBulletTravel); // probably replace camera front with a varaible that does not change when moving cannon
+		glutSolidCylinder(0.5, bulletSize, 30, 30);
+		glPopMatrix();
+	}
 	glPopMatrix();
 }
 
@@ -335,51 +366,6 @@ void drawCannonFromVBO()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-//void mouseMotionHandler3D(int x, int y)
-//{
-//	if (firstMouse) {
-//		lastMouseX = x;
-//		lastMouseY = y;
-//		firstMouse = false;
-//	}
-//
-//	double hypoteneuse = sqrt(pow(radius, 2) + pow(eyeY, 2));
-//	int dx = x - lastMouseX;
-//	int dy = y - lastMouseY;
-//
-//	lastMouseX = x;
-//	lastMouseY = y;
-//
-//	//if (x < 50 || x > window3DSizeX - 50) {
-//	//	lastMouseX = window3DSizeX / 2;
-//	//	lastMouseY = window3DSizeY / 2;
-//	//	glutWarpPointer(window3DSizeX / 2, window3DSizeY / 2);
-//	//}
-//	//else if (y < 50 || y > window3DSizeY - 50) {
-//	//	lastMouseX = window3DSizeX / 2;
-//	//	lastMouseY = window3DSizeY / 2;
-//	//	glutWarpPointer(window3DSizeX / 2, window3DSizeY / 2);
-//	//}
-//
-//	float sensitivity = 0.1f;
-//	dx *= sensitivity;
-//	dy *= sensitivity;
-//
-//	yaw += dx;
-//	pitch += dy;
-//
-//	if (pitch > 89.0f)
-//		pitch = 89.0f;
-//	if (pitch < -89.0f)
-//		pitch = -89.0f;
-//
-//	eyeX = cos(RADIANS * yaw) * cos(RADIANS * pitch) * hypoteneuse;
-//	eyeY = sin(RADIANS * pitch) * hypoteneuse;
-//	eyeZ = sin(RADIANS * yaw) * cos(RADIANS * pitch) * hypoteneuse;
-//
-//	glutPostRedisplay();
-//}
-
 void mouseScrollWheelHandler3D(int button, int dir, int xMouse, int yMouse)
 {
 	// Fill in this code for zooming in and out
@@ -423,6 +409,12 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 			}
 		}
 		break;
+	case ' ':
+		if (isBulletActive == false) {  //  && isCannonActive && gameStart == true
+			isBulletActive = true;
+			setLatestYawAndPitch();
+			glutTimerFunc(delay, animationHandlerBullets, 0);
+		}
 	default:
 		break;
 	}
@@ -436,31 +428,28 @@ void specialKeyHandler(int key, int x, int y)
 	switch (key)
 	{
 	case GLUT_KEY_LEFT:
-		yaw -= 10.0;
+		yaw -= 10.0f;
 		break;
 	case GLUT_KEY_RIGHT:
-		yaw += 10.0;
+		yaw += 10.0f;
 		break;
 	case GLUT_KEY_UP:
-		pitch += 5.0;
+		pitch += 5.0f;
 		break;
 	case GLUT_KEY_DOWN:
-		pitch -= 5.0;
+		pitch -= 5.0f;
 		break;
 	}
 
-	printf("%f", yaw);
-	printf("   ");
-
 	if (yaw > 0)
 		yaw = 0;
-	if (yaw < -180)
+	if (yaw < -180.0f)
 		yaw = -180;
 
-	if (pitch > 90.0)
-		pitch = 90.0;
-	if (pitch < 10)
-		pitch = 10;
+	if (pitch > 90.0f)
+		pitch = 90.0f;
+	if (pitch < 5.0f)
+		pitch = 5.0f;
 
 	cameraFrontX = (cos(RADIANS * yaw) * cos(RADIANS * pitch));
 	cameraFrontY = (sin(RADIANS * pitch));
@@ -532,4 +521,25 @@ void animationHandler(int param) {
 		glutPostRedisplay();
 		glutTimerFunc(delay, animationHandler, 0);
 	}
+}
+
+void animationHandlerBullets(int param) {
+	if (isBulletActive == true && currentBulletActiveTime < maxBulletActiveTime && isCannonActive == true) {
+		currentBulletTravel += bulletSpeed;
+		currentBulletActiveTime++;
+		glutPostRedisplay();
+		glutTimerFunc(delay, animationHandlerBullets, 0);
+	}
+	else {
+		currentBulletTravel = 0.0f;
+		currentBulletActiveTime = 0.0f;
+		isBulletActive = false;
+		setLatestYawAndPitch();
+	}
+	glutPostRedisplay();
+}
+
+void setLatestYawAndPitch() {
+	latestBulletYaw = yaw;
+	latestBulletPitch = pitch;
 }
