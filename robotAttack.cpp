@@ -10,6 +10,9 @@
 #include <vector>
 #include "robotAttack.h"
 #include "robot.h"
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -45,7 +48,7 @@ int lastMouseY;
 
 GLdouble eyeX = 0.0, eyeY = 3.0, eyeZ = 30.0;
 GLdouble radius = eyeZ;
-GLdouble zNear = 0.1, zFar = 40.0;
+GLdouble zNear = 0.1, zFar = 100.0;
 
 GLdouble cameraFrontX = 0.0, cameraFrontY = 0.0, cameraFrontZ = 0.0;
 
@@ -110,7 +113,7 @@ bool isCannonActive = true;
 float latestBulletYaw = yaw;
 float latestBulletPitch = pitch;
 
-float bulletSpeed = 0.5f;
+float bulletSpeed = 2.0f;
 float maxBulletActiveTime = 60.0f;
 
 float currentBulletActiveTime = 0.0f;
@@ -134,6 +137,8 @@ bool isAllBotsDead;
 // size
 
 float bulletSize = 1.0f;
+
+float gunOffset = 1.0;
 
 int main(int argc, char* argv[])
 {
@@ -241,7 +246,7 @@ void drawCannon() {
 	//glutSolidCube(4.0);
 	//glPopMatrix();
 	glPushMatrix();
-		glTranslatef(0, 0, radius * 0.8);
+		glTranslatef(gunOffset, 0, radius * 0.8);
 		glRotatef(-90, 0, 1, 0);
 		glRotatef(-yaw, 0, 1, 0);
 		glRotatef(pitch, 1, 0, 0);
@@ -259,7 +264,7 @@ void drawCannon() {
 
 void drawBullet() {
 	glPushMatrix();
-		glTranslatef(0, 0, radius * 0.8);
+		glTranslatef(gunOffset, 0, radius * 0.8);
 		glRotatef(-90, 0, 1, 0);
 		glRotatef(-latestBulletYaw, 0, 1, 0);
 		glRotatef(latestBulletPitch, 1, 0, 0);
@@ -286,10 +291,10 @@ void drawGround()
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, groundMat_shininess);
 	glBegin(GL_QUADS);
 	glNormal3f(0, 1, 0);
-	glVertex3f(-50.0f, -4.0f, -50.0f);
-	glVertex3f(-50.0f, -4.0f, 50.0f);
-	glVertex3f(50.0f, -4.0f, 50.0f);
-	glVertex3f(50.0f, -4.0f, -50.0f);
+	glVertex3f(-60.0f, -4.0f, -60.0f);
+	glVertex3f(-60.0f, -4.0f, 60.0f);
+	glVertex3f(60.0f, -4.0f, 60.0f);
+	glVertex3f(60.0f, -4.0f, -60.0f);
 	glEnd();
 	glPopMatrix();
 }
@@ -392,29 +397,38 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 	case 'a':
 		if (gameStart == false) {
 			gameStart = true;
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < bots.size(); i++) {
 				bots[i].isWalking = true;
 			}
 			glutTimerFunc(delay, animationHandler, 0);
+			glutTimerFunc(delay, animationHandlerShooting, 0);
 		}
 		break;
 	case 'R':
 	case 'r':
 		if (bots.empty()) {
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < 4; i++) {
 				Robot r = Robot();
+				r.cameraX = eyeX;
+				r.cameraY = eyeY;
+				r.cameraZ = eyeZ;
 				r.scaleFactor = 0.3;
-				r.startX = -15 + (7.5 * i);
+				float x = -25 + (15 * i);
+				if (x > 45) {
+					x = 45;
+				}
+				r.startX = x;
 				bots.push_back(r);
 			}
 		}
 		break;
 	case ' ':
-		if (isBulletActive == false) {  //  && isCannonActive && gameStart == true
+		if (isBulletActive == false && gameStart) {  //  && isCannonActive && gameStart == true
 			isBulletActive = true;
 			setLatestYawAndPitch();
 			glutTimerFunc(delay, animationHandlerBullets, 0);
 		}
+		break;
 	default:
 		break;
 	}
@@ -428,28 +442,28 @@ void specialKeyHandler(int key, int x, int y)
 	switch (key)
 	{
 	case GLUT_KEY_LEFT:
-		yaw -= 10.0f;
+		yaw -= 3.0f;
 		break;
 	case GLUT_KEY_RIGHT:
-		yaw += 10.0f;
+		yaw += 3.0f;
 		break;
 	case GLUT_KEY_UP:
-		pitch += 5.0f;
+		pitch += 3.0f;
 		break;
 	case GLUT_KEY_DOWN:
-		pitch -= 5.0f;
+		pitch -= 3.0f;
 		break;
 	}
 
-	if (yaw > 0)
-		yaw = 0;
+	if (yaw > -10)
+		yaw = -10;
 	if (yaw < -180.0f)
 		yaw = -180;
 
 	if (pitch > 90.0f)
 		pitch = 90.0f;
-	if (pitch < 5.0f)
-		pitch = 5.0f;
+	if (pitch < -8.0f)
+		pitch = -8.0f;
 
 	cameraFrontX = (cos(RADIANS * yaw) * cos(RADIANS * pitch));
 	cameraFrontY = (sin(RADIANS * pitch));
@@ -465,7 +479,7 @@ void animationHandler(int param) {
 		if (bots[i].life > 0)
 		{
 			if (bots[i].walkZ < eyeZ + 5) {
-				bots[i].walkZ += 0.1;
+				bots[i].walkZ += 0.05;
 			}
 			else {
 				bots[i].life = 0;
@@ -542,4 +556,26 @@ void animationHandlerBullets(int param) {
 void setLatestYawAndPitch() {
 	latestBulletYaw = yaw;
 	latestBulletPitch = pitch;
+}
+
+void animationHandlerShooting(int param)
+{
+	srand((unsigned int)time(NULL));
+	for (int i = 0; i < bots.size(); i++)
+	{
+		if (bots[i].isShooting)
+		{
+			bots[i].shoot();
+		}
+		if (rand() % 10 < 4 && bots[i].life > 0 && !bots[i].isShooting)
+		{
+			bots[i].shoot();
+			bots[i].isShooting = true;
+		}
+	}
+	if (gameStart == true)
+	{
+		glutPostRedisplay();
+		glutTimerFunc(delay, animationHandlerShooting, 0);
+	}
 }
