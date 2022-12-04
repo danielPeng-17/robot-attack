@@ -5,6 +5,9 @@
 #include <gl/glut.h>
 #include <utility>
 #include <vector>
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
 
 // Lighting/shading and material properties for robot - upcoming lecture - just copy for now
 	// Robot RGBA material properties (NOTE: we will learn about this later in the semester)
@@ -58,7 +61,7 @@ public:
 	float upperLegLength = robotBodyLength / 4;
 	float upperLegWidth = robotBodyLength / 4;
 
-
+	const float M_PI = 3.1415926;
 	// Control Robot body rotation on base
 	float robotAngle = 3.0;
 
@@ -70,7 +73,7 @@ public:
 
 	float scaleFactor = 1.0;
 	float startX = 0.0;
-	float walkZ = 0.0;
+	float walkZ = -40.0;
 
 	int life = 3;
 	bool isWalking = false;
@@ -79,10 +82,29 @@ public:
 	bool movingLeftLeg = true;
 	float deathRotation = 0.0;
 
+	bool isShooting = false;
+
+	float cameraY = 0.0;
+	float cameraX = 0.0;
+	float cameraZ = 0.0;
+
+	float bulletZ = 0.0;
+	float bulletY = 1.0 + 0.5 * (robotBodyLength / 1.7);
+	float bulletX = 0.0;
+
+	float bulletAngle = 0.0;
+	float bulletAngleY = 0.0;
+
+	float speed = 0.6;
+
 	GLUquadricObj* quadratic = gluNewQuadric();
 
 	void drawRobot()
 	{
+		if (isShooting) {
+			drawBullet();
+		}
+
 		glPushMatrix();
 		glTranslatef(startX, 2, walkZ);
 		// spin robot on base. 
@@ -219,9 +241,39 @@ public:
 	}
 
 	void drawBullet() {
-		glPushMatrix();
-		glutSolidCube(1.0);
-		glPopMatrix();
+		if (isShooting) {
+			glPushMatrix();
+			glTranslatef(bulletX + (robotBodyLength / 12), bulletY, bulletZ);
+			glRotatef(bulletAngle, 0, 1, 0);
+			glScalef(0.2, 0.2, 1);
+			glutSolidCube(1.0);
+			glPopMatrix();
+		}
+		if (bulletZ > cameraZ + 5 || life == 0) {
+			isShooting = false;
+			glutPostRedisplay();
+		}
+	}
+
+	void shoot() {
+		if (isShooting == false) {
+			isShooting = true;
+			bulletX = startX;
+			bulletZ = walkZ;
+			float x = cameraX - startX;
+			float y = cameraY - bulletY;
+			float z = cameraZ + walkZ;
+			srand((unsigned int)time(NULL));
+			bulletAngle = (atan(x / z) * (180 / M_PI)) + ((rand() % 100) / (float)100);
+			//printf("bullet angle %f x %f z %f\n", bulletAngle, x, z);
+			//printf("atan %f\n", atan(x / cameraZ));
+			bulletAngleY = atan(y / z) * (180 / M_PI);
+		}
+		else {
+			bulletX += sin(M_PI * 2 * (bulletAngle / 360.0)) * speed;
+			bulletY -= sin(M_PI * 2 * (bulletAngleY / 360.0)) * 0.1;
+			bulletZ += cos(M_PI * 2 * (bulletAngle / 360.0)) * speed;
+		}
 	}
 };
 

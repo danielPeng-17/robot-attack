@@ -14,3 +14,4 @@ void drawCannon();
 void animationHandlerBullets(int param);
 void drawBullet();
 void setLatestYawAndPitch();
+void animationHandlerShooting(int param);

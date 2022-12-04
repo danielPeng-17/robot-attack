@@ -10,6 +10,9 @@
 #include <vector>
 #include "robotAttack.h"
 #include "robot.h"
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -45,7 +48,7 @@ int lastMouseY;
 
 GLdouble eyeX = 0.0, eyeY = 3.0, eyeZ = 30.0;
 GLdouble radius = eyeZ;
-GLdouble zNear = 0.1, zFar = 40.0;
+GLdouble zNear = 0.1, zFar = 100.0;
 
 GLdouble cameraFrontX = 0.0, cameraFrontY = 0.0, cameraFrontZ = 0.0;
 
@@ -286,10 +289,10 @@ void drawGround()
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, groundMat_shininess);
 	glBegin(GL_QUADS);
 	glNormal3f(0, 1, 0);
-	glVertex3f(-50.0f, -4.0f, -50.0f);
-	glVertex3f(-50.0f, -4.0f, 50.0f);
-	glVertex3f(50.0f, -4.0f, 50.0f);
-	glVertex3f(50.0f, -4.0f, -50.0f);
+	glVertex3f(-60.0f, -4.0f, -60.0f);
+	glVertex3f(-60.0f, -4.0f, 60.0f);
+	glVertex3f(60.0f, -4.0f, 60.0f);
+	glVertex3f(60.0f, -4.0f, -60.0f);
 	glEnd();
 	glPopMatrix();
 }
@@ -392,19 +395,27 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 	case 'a':
 		if (gameStart == false) {
 			gameStart = true;
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < bots.size(); i++) {
 				bots[i].isWalking = true;
 			}
 			glutTimerFunc(delay, animationHandler, 0);
+			glutTimerFunc(delay, animationHandlerShooting, 0);
 		}
 		break;
 	case 'R':
 	case 'r':
 		if (bots.empty()) {
-			for (int i = 0; i < 5; i++) {
+			for (int i = 0; i < 4; i++) {
 				Robot r = Robot();
+				r.cameraX = eyeX;
+				r.cameraY = eyeY;
+				r.cameraZ = eyeZ;
 				r.scaleFactor = 0.3;
-				r.startX = -15 + (7.5 * i);
+				float x = -25 + (15 * i);
+				if (x > 45) {
+					x = 45;
+				}
+				r.startX = x;
 				bots.push_back(r);
 			}
 		}
@@ -465,7 +476,7 @@ void animationHandler(int param) {
 		if (bots[i].life > 0)
 		{
 			if (bots[i].walkZ < eyeZ + 5) {
-				bots[i].walkZ += 0.1;
+				bots[i].walkZ += 0.05;
 			}
 			else {
 				bots[i].life = 0;
@@ -542,4 +553,26 @@ void animationHandlerBullets(int param) {
 void setLatestYawAndPitch() {
 	latestBulletYaw = yaw;
 	latestBulletPitch = pitch;
+}
+
+void animationHandlerShooting(int param)
+{
+	srand((unsigned int)time(NULL));
+	for (int i = 0; i < bots.size(); i++)
+	{
+		if (bots[i].isShooting)
+		{
+			bots[i].shoot();
+		}
+		if (rand() % 10 < 4 && bots[i].life > 0 && !bots[i].isShooting)
+		{
+			bots[i].shoot();
+			bots[i].isShooting = true;
+		}
+	}
+	if (gameStart == true)
+	{
+		glutPostRedisplay();
+		glutTimerFunc(delay, animationHandlerShooting, 0);
+	}
 }
