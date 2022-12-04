@@ -399,6 +399,7 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 			gameStart = true;
 			for (int i = 0; i < bots.size(); i++) {
 				bots[i].isWalking = true;
+				bots[i].calcBulletPatch();
 			}
 			glutTimerFunc(delay, animationHandler, 0);
 			glutTimerFunc(delay, animationHandlerShooting, 0);
