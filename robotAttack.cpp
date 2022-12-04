@@ -113,7 +113,7 @@ bool isCannonActive = true;
 float latestBulletYaw = yaw;
 float latestBulletPitch = pitch;
 
-float bulletSpeed = 0.5f;
+float bulletSpeed = 2.0f;
 float maxBulletActiveTime = 60.0f;
 
 float currentBulletActiveTime = 0.0f;
@@ -137,6 +137,8 @@ bool isAllBotsDead;
 // size
 
 float bulletSize = 1.0f;
+
+float gunOffset = 1.0;
 
 int main(int argc, char* argv[])
 {
@@ -244,7 +246,7 @@ void drawCannon() {
 	//glutSolidCube(4.0);
 	//glPopMatrix();
 	glPushMatrix();
-		glTranslatef(0, 0, radius * 0.8);
+		glTranslatef(gunOffset, 0, radius * 0.8);
 		glRotatef(-90, 0, 1, 0);
 		glRotatef(-yaw, 0, 1, 0);
 		glRotatef(pitch, 1, 0, 0);
@@ -262,7 +264,7 @@ void drawCannon() {
 
 void drawBullet() {
 	glPushMatrix();
-		glTranslatef(0, 0, radius * 0.8);
+		glTranslatef(gunOffset, 0, radius * 0.8);
 		glRotatef(-90, 0, 1, 0);
 		glRotatef(-latestBulletYaw, 0, 1, 0);
 		glRotatef(latestBulletPitch, 1, 0, 0);
@@ -421,11 +423,12 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 		}
 		break;
 	case ' ':
-		if (isBulletActive == false) {  //  && isCannonActive && gameStart == true
+		if (isBulletActive == false && gameStart) {  //  && isCannonActive && gameStart == true
 			isBulletActive = true;
 			setLatestYawAndPitch();
 			glutTimerFunc(delay, animationHandlerBullets, 0);
 		}
+		break;
 	default:
 		break;
 	}
@@ -439,28 +442,28 @@ void specialKeyHandler(int key, int x, int y)
 	switch (key)
 	{
 	case GLUT_KEY_LEFT:
-		yaw -= 10.0f;
+		yaw -= 3.0f;
 		break;
 	case GLUT_KEY_RIGHT:
-		yaw += 10.0f;
+		yaw += 3.0f;
 		break;
 	case GLUT_KEY_UP:
-		pitch += 5.0f;
+		pitch += 3.0f;
 		break;
 	case GLUT_KEY_DOWN:
-		pitch -= 5.0f;
+		pitch -= 3.0f;
 		break;
 	}
 
-	if (yaw > 0)
-		yaw = 0;
+	if (yaw > -10)
+		yaw = -10;
 	if (yaw < -180.0f)
 		yaw = -180;
 
 	if (pitch > 90.0f)
 		pitch = 90.0f;
-	if (pitch < 5.0f)
-		pitch = 5.0f;
+	if (pitch < -8.0f)
+		pitch = -8.0f;
 
 	cameraFrontX = (cos(RADIANS * yaw) * cos(RADIANS * pitch));
 	cameraFrontY = (sin(RADIANS * pitch));

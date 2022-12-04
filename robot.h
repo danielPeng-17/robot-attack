@@ -75,7 +75,7 @@ public:
 	float startX = 0.0;
 	float walkZ = -40.0;
 
-	int life = 3;
+	int life = 2;
 	bool isWalking = false;
 	bool legMoveBack = true;
 	bool legMoveForward = false;
