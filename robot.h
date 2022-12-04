@@ -258,22 +258,24 @@ public:
 	void shoot() {
 		if (isShooting == false) {
 			isShooting = true;
-			bulletX = startX;
-			bulletZ = walkZ;
-			float x = cameraX - startX;
-			float y = cameraY - bulletY;
-			float z = cameraZ + walkZ;
-			srand((unsigned int)time(NULL));
-			bulletAngle = (atan(x / z) * (180 / M_PI)) + ((rand() % 100) / (float)100);
-			//printf("bullet angle %f x %f z %f\n", bulletAngle, x, z);
-			//printf("atan %f\n", atan(x / cameraZ));
-			bulletAngleY = atan(y / z) * (180 / M_PI);
+			calcBulletPatch();
 		}
 		else {
 			bulletX += sin(M_PI * 2 * (bulletAngle / 360.0)) * speed;
 			bulletY -= sin(M_PI * 2 * (bulletAngleY / 360.0)) * 0.1;
 			bulletZ += cos(M_PI * 2 * (bulletAngle / 360.0)) * speed;
 		}
+	}
+
+	void calcBulletPatch() {
+		bulletX = startX;
+		bulletZ = walkZ;
+		float x = cameraX - startX;
+		float y = cameraY - bulletY;
+		float z = cameraZ + walkZ;
+		srand((unsigned int)time(NULL));
+		bulletAngle = (atan(x / z) * (180 / M_PI)) + ((rand() % 100) / (float)100);
+		bulletAngleY = atan(y / z) * (180 / M_PI);
 	}
 };
 
