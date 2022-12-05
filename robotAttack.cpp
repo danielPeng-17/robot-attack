@@ -1,3 +1,6 @@
+// CPS 511 Assignment 3
+// Danny Khuu (500903037) and Daniel Peng (500901658)
+
 #include <stdio.h>
 #include <windows.h>
 #include <GL/glew.h>
@@ -31,10 +34,6 @@ GLfloat light_diffuse1[] = { 1.0, 1.0, 1.0, 1.0 };
 GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
 GLfloat model_ambient[] = { 0.5, 0.5, 0.5, 1.0 };
 
-//
-// Surface of Revolution consists of vertices and quads
-//
-// Set up lighting/shading and material properties for surface of revolution
 GLfloat quadMat_ambient[] = { 0.0, 0.0, 0.0, 1.0 };
 GLfloat quadMat_specular[] = { 0.45, 0.55, 0.45, 1.0 };
 GLfloat quadMat_diffuse[] = { 0.1, 0.35, 0.1, 1.0 };
@@ -274,7 +273,7 @@ void drawBullet() {
 		glRotatef(latestBulletPitch, 1, 0, 0);
 	if (isCannonActive == true) {
 		glPushMatrix();
-		glTranslatef(0, 0, -currentBulletTravel); // probably replace camera front with a varaible that does not change when moving cannon
+		glTranslatef(0, 0, -currentBulletTravel);
 		glutSolidCylinder(0.5, bulletSize, 30, 30);
 		glPopMatrix();
 	}
@@ -445,6 +444,13 @@ void specialKeyHandler(int key, int x, int y)
 
 	switch (key)
 	{
+	case GLUT_KEY_F1:
+		printf(">>> Controls\n");
+		printf("arrow keys to control camera and canon.\n");
+		printf("space bar to shoot cannon.\n");
+		printf("r to start and reset game.\n");
+		printf("q to quit.\n");
+		break;
 	case GLUT_KEY_LEFT:
 		yaw -= 3.0f;
 		break;

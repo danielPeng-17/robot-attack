@@ -1,3 +1,6 @@
+// CPS 511 Assignment 3
+// Danny Khuu (500903037) and Daniel Peng (500901658)
+
 int main(int argc, char* argv[]);
 void init3DSurfaceWindow();
 void reshape3D(int w, int h);

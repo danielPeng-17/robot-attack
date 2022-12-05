@@ -1,3 +1,6 @@
+// CPS 511 Assignment 3
+// Danny Khuu (500903037) and Daniel Peng (500901658)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
@@ -9,8 +12,6 @@
 #include <cstdlib>
 #include <ctime>
 
-// Lighting/shading and material properties for robot - upcoming lecture - just copy for now
-	// Robot RGBA material properties (NOTE: we will learn about this later in the semester)
 GLfloat robotBody_mat_ambient[] = { 0.0f,0.0f,0.0f,1.0f };
 GLfloat robotBody_mat_specular[] = { 0.45f,0.55f,0.45f,1.0f };
 GLfloat robotBody_mat_diffuse[] = { 0.1f,0.35f,0.1f,1.0f };
@@ -41,8 +42,6 @@ public:
 	const float MAX_UPPER_LEG_ANGLE = 20.0;
 	const float MIN_UPPER_LEG_ANGLE = -20.0;
 
-	// Note how everything depends on robot body dimensions so that can scale entire robot proportionately
-	// just by changing robot body scale
 	float robotBodyWidth = 5.0;
 	float robotBodyLength = 7.0;
 	float robotBodyDepth = 5.0;
