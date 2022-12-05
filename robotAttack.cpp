@@ -404,7 +404,7 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 				r.cameraY = eyeY;
 				r.cameraZ = eyeZ;
 				r.scaleFactor = 0.3;
-				float x = -25 + (15 * i);
+				float x = -20 + (15 * i);
 				if (x > 45) {
 					x = 45;
 				}
@@ -483,11 +483,9 @@ void collisionDetection(int param) {
 			isCannonActive = false;
 		}
 
-		float cannonBulletCollisionDistance = sqrt(pow(bots[i].startX - latestBulletYaw - 90 - gunOffset, 2) + pow(-latestBulletPitch, 2) + pow(bots[i].walkZ - radius * 0.8 - currentBulletTravel, 2));
-		if (i == 3) {
-			printf("cannonBulletCollisionDistance for bot %d is %f\n", i, cannonBulletCollisionDistance);
-		}
-		if (cannonBulletCollisionDistance < 5) {
+		float cannonBulletCollisionDistance = sqrt(pow(bots[i].startX - latestBulletYaw - 90 - gunOffset, 2) + pow(-latestBulletPitch, 2) + pow(radius * 0.8 - bots[i].walkZ - currentBulletTravel, 2));
+
+		if (cannonBulletCollisionDistance < 5 && bots[i].life > 0) {
 			bots[i].life -= 1;
 			bots[i].isShooting = false;
 			currentBulletTravel = 0.0f;
@@ -507,7 +505,7 @@ void animationHandler(int param) {
 		if (bots[i].life > 0)
 		{
 			if (bots[i].walkZ < eyeZ + 5) {
-				bots[i].walkZ += 0.05;
+				bots[i].walkZ += 0.03;
 			}
 			else {
 				bots[i].life = 0;
@@ -515,7 +513,7 @@ void animationHandler(int param) {
 				bots.clear();
 				break;
 			}
-			
+
 
 			// walking animation
 			if (bots[i].legMoveBack) {
@@ -553,13 +551,15 @@ void animationHandler(int param) {
 				bots[i].legMoveForward = false;
 				bots[i].legMoveBack = false;
 			}
-
-			bots[i].deathRotation += 0.1;
-			bots[i].scaleFactor -= 0.1;
+			if (bots[i].deathRotation < 90) {
+				bots[i].deathRotation += 1;
+			}
+			if (bots[i].deathTranslate < 3) {
+				bots[i].deathTranslate += 0.1;
+			}
 		}
 	}
 	if (gameStart == true) {
-		//glutSetWindow(window3D);
 		glutPostRedisplay();
 		glutTimerFunc(delay, animationHandler, 0);
 	}
@@ -591,14 +591,14 @@ void animationHandlerShooting(int param)
 	srand((unsigned int)time(NULL));
 	for (int i = 0; i < bots.size(); i++)
 	{
-		if (bots[i].isShooting)
-		{
-			bots[i].shoot();
-		}
-		if (rand() % 10 < 4 && bots[i].life > 0 && !bots[i].isShooting)
+		if (bots[i].life > 0 && !bots[i].isShooting)
 		{
 			bots[i].shoot();
 			bots[i].isShooting = true;
+		}
+		if (bots[i].isShooting)
+		{
+			bots[i].shoot();
 		}
 	}
 	if (gameStart == true)

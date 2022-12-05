@@ -96,6 +96,7 @@ public:
 	float bulletAngleY = 0.0;
 
 	float speed = 0.6;
+	float deathTranslate = 0.0;
 
 	GLUquadricObj* quadratic = gluNewQuadric();
 
@@ -106,10 +107,11 @@ public:
 		}
 
 		glPushMatrix();
-		if (life == 0) {
-			glRotatef(deathRotation, 1.0, 0.0, 0.0);
-		}
 		glTranslatef(startX, 2, walkZ);
+
+		glPushMatrix();
+		glTranslatef(0, -deathTranslate, 0);
+		glRotatef(-deathRotation, 1.0, 0.0, 0.0);
 		glRotatef(robotAngle, 0.0, 1.0, 0.0);
 		glScalef(scaleFactor, scaleFactor, scaleFactor);
 
@@ -119,6 +121,7 @@ public:
 		drawLeg(true);
 		drawLeg(false);
 
+		glPopMatrix();
 		glPopMatrix();
 	}
 
