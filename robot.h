@@ -253,7 +253,7 @@ public:
 			glutSolidCube(1.0);
 			glPopMatrix();
 		}
-		if (bulletZ > cameraZ + 5 || life == 0) {
+		if (bulletZ > cameraZ + 5  || bulletX < -60 || bulletX > 60 || life == 0) {
 			isShooting = false;
 			glutPostRedisplay();
 		}
@@ -276,7 +276,7 @@ public:
 		float x = cameraX - startX;
 		float y = cameraY - bulletY;
 		float z = cameraZ + walkZ;
-		srand((unsigned int)time(NULL));
+		srand(time(NULL));
 		bulletAngle = (atan(x / z) * (180 / M_PI)) + ((rand() % 100) / (float)100);
 	}
 };

@@ -588,18 +588,19 @@ void setLatestYawAndPitch() {
 
 void animationHandlerShooting(int param)
 {
-	srand((unsigned int)time(NULL));
+	srand(time(NULL));
 	for (int i = 0; i < bots.size(); i++)
 	{
-		if (bots[i].life > 0 && !bots[i].isShooting)
-		{
-			bots[i].shoot();
-			bots[i].isShooting = true;
-		}
 		if (bots[i].isShooting)
 		{
 			bots[i].shoot();
 		}
+		if (rand() % 10 < 4 && bots[i].life > 0 && !bots[i].isShooting)
+		{
+			bots[i].shoot();
+			bots[i].isShooting = true;
+		}
+		
 	}
 	if (gameStart == true)
 	{
