@@ -1,3 +1,6 @@
+// CPS 511 Assignment 3
+// Danny Khuu (500903037) and Daniel Peng (500901658)
+
 #include <stdio.h>
 #include <windows.h>
 #include <GL/glew.h>
@@ -31,10 +34,6 @@ GLfloat light_diffuse1[] = { 1.0, 1.0, 1.0, 1.0 };
 GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
 GLfloat model_ambient[] = { 0.5, 0.5, 0.5, 1.0 };
 
-//
-// Surface of Revolution consists of vertices and quads
-//
-// Set up lighting/shading and material properties for surface of revolution
 GLfloat quadMat_ambient[] = { 0.0, 0.0, 0.0, 1.0 };
 GLfloat quadMat_specular[] = { 0.45, 0.55, 0.45, 1.0 };
 GLfloat quadMat_diffuse[] = { 0.1, 0.35, 0.1, 1.0 };
@@ -46,7 +45,7 @@ int lastMouseX;
 int lastMouseY;
 
 
-GLdouble eyeX = 0.0, eyeY = 3.0, eyeZ = 30.0;
+GLdouble eyeX = 0.0, eyeY = 5.0, eyeZ = 30.0;
 GLdouble radius = eyeZ;
 GLdouble zNear = 0.1, zFar = 100.0;
 
@@ -242,11 +241,15 @@ void display3D()
 
 
 void drawCannon() {
-	//glPushMatrix();
-	//glutSolidCube(4.0);
-	//glPopMatrix();
+	
 	glPushMatrix();
-		glTranslatef(gunOffset, 0, radius * 0.8);
+		if (!isCannonActive) {
+			glMaterialfv(GL_FRONT, GL_AMBIENT, robotArm_mat_ambient);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, robotArm_mat_specular);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, robotArm_mat_diffuse);
+			glMaterialfv(GL_FRONT, GL_SHININESS, robotArm_mat_shininess);
+		}
+		glTranslatef(gunOffset, 2, radius * 0.8);
 		glRotatef(-90, 0, 1, 0);
 		glRotatef(-yaw, 0, 1, 0);
 		glRotatef(pitch, 1, 0, 0);
@@ -264,22 +267,17 @@ void drawCannon() {
 
 void drawBullet() {
 	glPushMatrix();
-		glTranslatef(gunOffset, 0, radius * 0.8);
+		glTranslatef(gunOffset, 2, radius * 0.8);
 		glRotatef(-90, 0, 1, 0);
 		glRotatef(-latestBulletYaw, 0, 1, 0);
 		glRotatef(latestBulletPitch, 1, 0, 0);
 	if (isCannonActive == true) {
 		glPushMatrix();
-		glTranslatef(0, 0, -currentBulletTravel); // probably replace camera front with a varaible that does not change when moving cannon
+		glTranslatef(0, 0, -currentBulletTravel);
 		glutSolidCylinder(0.5, bulletSize, 30, 30);
 		glPopMatrix();
 	}
 	glPopMatrix();
-}
-
-void drawBots()
-{
-
 }
 
 void drawGround()
@@ -393,20 +391,11 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 		// Esc, q, or Q key = Quit 
 		exit(0);
 		break;
-	case 'A':
-	case 'a':
-		if (gameStart == false) {
-			gameStart = true;
-			for (int i = 0; i < bots.size(); i++) {
-				bots[i].isWalking = true;
-				bots[i].calcBulletPatch();
-			}
-			glutTimerFunc(delay, animationHandler, 0);
-			glutTimerFunc(delay, animationHandlerShooting, 0);
-		}
-		break;
 	case 'R':
 	case 'r':
+		if (bots.size() > 0) {
+			bots.clear();
+		}
 		if (bots.empty()) {
 			for (int i = 0; i < 4; i++) {
 				Robot r = Robot();
@@ -414,7 +403,7 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 				r.cameraY = eyeY;
 				r.cameraZ = eyeZ;
 				r.scaleFactor = 0.3;
-				float x = -25 + (15 * i);
+				float x = -20 + (15 * i);
 				if (x > 45) {
 					x = 45;
 				}
@@ -422,9 +411,20 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 				bots.push_back(r);
 			}
 		}
+		if (!gameStart || !isCannonActive) {
+			gameStart = true;
+			isCannonActive = true;
+			for (int i = 0; i < bots.size(); i++) {
+				bots[i].isWalking = true;
+				bots[i].calcBulletPatch();
+			}
+			glutTimerFunc(delay, collisionDetection, 0);
+			glutTimerFunc(delay, animationHandler, 0);
+			glutTimerFunc(delay, animationHandlerShooting, 0);
+		}
 		break;
 	case ' ':
-		if (isBulletActive == false && gameStart) {  //  && isCannonActive && gameStart == true
+		if (isBulletActive == false && isCannonActive && gameStart == true) {
 			isBulletActive = true;
 			setLatestYawAndPitch();
 			glutTimerFunc(delay, animationHandlerBullets, 0);
@@ -440,8 +440,17 @@ void specialKeyHandler(int key, int x, int y)
 {
 	double length = sqrt(pow(radius, 2) + pow(eyeY, 2));
 
+	if (!isCannonActive) return;
+
 	switch (key)
 	{
+	case GLUT_KEY_F1:
+		printf(">>> Controls\n");
+		printf("arrow keys to control camera and canon.\n");
+		printf("space bar to shoot cannon.\n");
+		printf("r to start and reset game.\n");
+		printf("q to quit.\n");
+		break;
 	case GLUT_KEY_LEFT:
 		yaw -= 3.0f;
 		break;
@@ -473,6 +482,28 @@ void specialKeyHandler(int key, int x, int y)
 	glutPostRedisplay();
 }
 
+void collisionDetection(int param) {
+	for (int i = 0; i < bots.size(); i++) {
+		float botBulletsCollisionDistance = sqrt(pow(gunOffset - bots[i].bulletX, 2) + pow(2 - bots[i].bulletY, 2) + pow((radius * 0.8) - bots[i].bulletZ, 2));
+		if (botBulletsCollisionDistance < 1.8) {
+			isCannonActive = false;
+		}
+
+		float cannonBulletCollisionDistance = sqrt(pow(bots[i].startX - latestBulletYaw - 90 - gunOffset, 2) + pow(-latestBulletPitch, 2) + pow(radius * 0.8 - bots[i].walkZ - currentBulletTravel, 2));
+
+		if (cannonBulletCollisionDistance < 5 && bots[i].life > 0) {
+			bots[i].life -= 1;
+			bots[i].isShooting = false;
+			currentBulletTravel = 0.0f;
+			currentBulletActiveTime = 0.0f;
+			isBulletActive = false;
+			setLatestYawAndPitch();
+		}
+	}
+	glutPostRedisplay();
+	glutTimerFunc(delay, collisionDetection, 0);
+}
+
 void animationHandler(int param) {
 
 	for (int i = 0; i < bots.size() && bots.size() > 0; i++)
@@ -480,7 +511,7 @@ void animationHandler(int param) {
 		if (bots[i].life > 0)
 		{
 			if (bots[i].walkZ < eyeZ + 5) {
-				bots[i].walkZ += 0.05;
+				bots[i].walkZ += 0.03;
 			}
 			else {
 				bots[i].life = 0;
@@ -488,7 +519,7 @@ void animationHandler(int param) {
 				bots.clear();
 				break;
 			}
-			
+
 
 			// walking animation
 			if (bots[i].legMoveBack) {
@@ -526,13 +557,15 @@ void animationHandler(int param) {
 				bots[i].legMoveForward = false;
 				bots[i].legMoveBack = false;
 			}
-
-			bots[i].deathRotation += 0.1;
-			bots[i].scaleFactor -= 0.1;
+			if (bots[i].deathRotation < 90) {
+				bots[i].deathRotation += 1;
+			}
+			if (bots[i].deathTranslate < 3) {
+				bots[i].deathTranslate += 0.1;
+			}
 		}
 	}
 	if (gameStart == true) {
-		//glutSetWindow(window3D);
 		glutPostRedisplay();
 		glutTimerFunc(delay, animationHandler, 0);
 	}
@@ -561,7 +594,7 @@ void setLatestYawAndPitch() {
 
 void animationHandlerShooting(int param)
 {
-	srand((unsigned int)time(NULL));
+	srand(time(NULL));
 	for (int i = 0; i < bots.size(); i++)
 	{
 		if (bots[i].isShooting)
@@ -573,6 +606,7 @@ void animationHandlerShooting(int param)
 			bots[i].shoot();
 			bots[i].isShooting = true;
 		}
+		
 	}
 	if (gameStart == true)
 	{

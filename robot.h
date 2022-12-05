@@ -1,3 +1,6 @@
+// CPS 511 Assignment 3
+// Danny Khuu (500903037) and Daniel Peng (500901658)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
@@ -9,8 +12,6 @@
 #include <cstdlib>
 #include <ctime>
 
-// Lighting/shading and material properties for robot - upcoming lecture - just copy for now
-	// Robot RGBA material properties (NOTE: we will learn about this later in the semester)
 GLfloat robotBody_mat_ambient[] = { 0.0f,0.0f,0.0f,1.0f };
 GLfloat robotBody_mat_specular[] = { 0.45f,0.55f,0.45f,1.0f };
 GLfloat robotBody_mat_diffuse[] = { 0.1f,0.35f,0.1f,1.0f };
@@ -41,8 +42,6 @@ public:
 	const float MAX_UPPER_LEG_ANGLE = 20.0;
 	const float MIN_UPPER_LEG_ANGLE = -20.0;
 
-	// Note how everything depends on robot body dimensions so that can scale entire robot proportionately
-	// just by changing robot body scale
 	float robotBodyWidth = 5.0;
 	float robotBodyLength = 7.0;
 	float robotBodyDepth = 5.0;
@@ -73,9 +72,9 @@ public:
 
 	float scaleFactor = 1.0;
 	float startX = 0.0;
-	float walkZ = -40.0;
+	float walkZ = -30.0;
 
-	int life = 2;
+	int life = 1;
 	bool isWalking = false;
 	bool legMoveBack = true;
 	bool legMoveForward = false;
@@ -96,6 +95,7 @@ public:
 	float bulletAngleY = 0.0;
 
 	float speed = 0.6;
+	float deathTranslate = 0.0;
 
 	GLUquadricObj* quadratic = gluNewQuadric();
 
@@ -107,9 +107,11 @@ public:
 
 		glPushMatrix();
 		glTranslatef(startX, 2, walkZ);
-		// spin robot on base. 
+
+		glPushMatrix();
+		glTranslatef(0, -deathTranslate, 0);
+		glRotatef(-deathRotation, 1.0, 0.0, 0.0);
 		glRotatef(robotAngle, 0.0, 1.0, 0.0);
-		glRotatef(deathRotation, 1.0, 0.0, 0.0);
 		glScalef(scaleFactor, scaleFactor, scaleFactor);
 
 		drawBody();
@@ -118,6 +120,7 @@ public:
 		drawLeg(true);
 		drawLeg(false);
 
+		glPopMatrix();
 		glPopMatrix();
 	}
 
@@ -249,7 +252,7 @@ public:
 			glutSolidCube(1.0);
 			glPopMatrix();
 		}
-		if (bulletZ > cameraZ + 5 || life == 0) {
+		if (bulletZ > cameraZ + 5  || bulletX < -60 || bulletX > 60 || life == 0) {
 			isShooting = false;
 			glutPostRedisplay();
 		}
@@ -262,7 +265,6 @@ public:
 		}
 		else {
 			bulletX += sin(M_PI * 2 * (bulletAngle / 360.0)) * speed;
-			bulletY -= sin(M_PI * 2 * (bulletAngleY / 360.0)) * 0.1;
 			bulletZ += cos(M_PI * 2 * (bulletAngle / 360.0)) * speed;
 		}
 	}
@@ -273,9 +275,8 @@ public:
 		float x = cameraX - startX;
 		float y = cameraY - bulletY;
 		float z = cameraZ + walkZ;
-		srand((unsigned int)time(NULL));
+		srand(time(NULL));
 		bulletAngle = (atan(x / z) * (180 / M_PI)) + ((rand() % 100) / (float)100);
-		bulletAngleY = atan(y / z) * (180 / M_PI);
 	}
 };
 
