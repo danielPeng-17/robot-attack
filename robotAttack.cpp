@@ -51,6 +51,7 @@ GLdouble radius = eyeZ;
 GLdouble zNear = 0.1, zFar = 100.0;
 
 GLdouble cameraFrontX = 0.0, cameraFrontY = 0.0, cameraFrontZ = 0.0;
+GLdouble latestCameraFrontX = cameraFrontX, latestCameraFrontY = cameraFrontY, latestCameraFrontZ = cameraFrontZ;
 
 const double degree = 3.1415 / 180;
 
@@ -119,6 +120,7 @@ float maxBulletActiveTime = 60.0f;
 float currentBulletActiveTime = 0.0f;
 float currentBulletTravel = 0.0f;
 
+
 int window3DSizeX = 800, window3DSizeY = 600;
 GLdouble aspect = (GLdouble)window3DSizeX / window3DSizeY;
 
@@ -139,6 +141,12 @@ bool isAllBotsDead;
 float bulletSize = 1.0f;
 
 float gunOffset = 1.0;
+
+// bullet positions
+
+float bulletX = gunOffset;
+float bulletY = 2.0f;
+float bulletZ = radius * 0.8;
 
 int main(int argc, char* argv[])
 {
@@ -265,6 +273,7 @@ void drawCannon() {
 		glPopMatrix();
 	glPopMatrix();
 }
+
 
 void drawBullet() {
 	glPushMatrix();
@@ -428,6 +437,7 @@ void keyboardHandler3D(unsigned char key, int x, int y)
 		if (isBulletActive == false && isCannonActive && gameStart == true) {
 			isBulletActive = true;
 			setLatestYawAndPitch();
+			setLatestXY();
 			glutTimerFunc(delay, animationHandlerBullets, 0);
 		}
 		break;
@@ -483,9 +493,9 @@ void collisionDetection(int param) {
 			isCannonActive = false;
 		}
 
-		float cannonBulletCollisionDistance = sqrt(pow(bots[i].startX - latestBulletYaw - 90 - gunOffset, 2) + pow(-latestBulletPitch, 2) + pow(bots[i].walkZ - radius * 0.8 - currentBulletTravel, 2));
+		float cannonBulletCollisionDistance = sqrt(pow(bots[i].startX - bulletX, 2) + pow(bulletY, 2) + pow(bots[i].walkZ - bulletZ, 2));
 		if (i == 3) {
-			printf("cannonBulletCollisionDistance for bot %d is %f\n", i, cannonBulletCollisionDistance);
+
 		}
 		if (cannonBulletCollisionDistance < 5) {
 			bots[i].life -= 1;
@@ -494,6 +504,7 @@ void collisionDetection(int param) {
 			currentBulletActiveTime = 0.0f;
 			isBulletActive = false;
 			setLatestYawAndPitch();
+			setLatestXY();
 		}
 	}
 	glutPostRedisplay();
@@ -567,6 +578,7 @@ void animationHandler(int param) {
 
 void animationHandlerBullets(int param) {
 	if (isBulletActive == true && currentBulletActiveTime < maxBulletActiveTime && isCannonActive == true) {
+		calculateXYZ();
 		currentBulletTravel += bulletSpeed;
 		currentBulletActiveTime++;
 		glutPostRedisplay();
@@ -575,6 +587,9 @@ void animationHandlerBullets(int param) {
 	else {
 		currentBulletTravel = 0.0f;
 		currentBulletActiveTime = 0.0f;
+		bulletX = gunOffset;
+		bulletY = 2.0f;
+		bulletZ = radius * 0.8;
 		isBulletActive = false;
 		setLatestYawAndPitch();
 	}
@@ -606,4 +621,16 @@ void animationHandlerShooting(int param)
 		glutPostRedisplay();
 		glutTimerFunc(delay, animationHandlerShooting, 0);
 	}
+}
+
+void calculateXYZ() {
+	bulletX += asin(latestCameraFrontX) * bulletSpeed;
+	bulletY += asin(latestCameraFrontY) * bulletSpeed;
+	bulletZ -= acos(latestCameraFrontZ) * bulletSpeed;
+}
+
+void setLatestXY() {
+	latestCameraFrontX = cameraFrontX;
+	latestCameraFrontY = cameraFrontY;
+	latestCameraFrontZ = cameraFrontZ;
 }
